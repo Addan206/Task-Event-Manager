@@ -11,12 +11,21 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # build by specifying --build-name and --build-number, respectively.
 # In Android, build-name is used as versionName while build-number used as versionCode.
 # Read more about Android versioning at https://developer.android.com/studio/publish/versioning
-# In iOS, build-name is used as CFBundleShortVersionString while build-number is used as CFBundleVersion.
+# In iOS, build-name is used as CFBundleShortVersionString while build-number is used a,s CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
 version: 1.0.0+1
+
+flutter_launcher_icons:
+  android: "launcher_icon" # or true to override the existing default icon
+  ios: true
+  image_path: "assets/to-do-list.png"
+  # Optionally, for adaptive icons (Android 8.0+):
+  # adaptive_icon_background: "#ffffff"
+  # adaptive_icon_foreground: "assets/images/foreground.png"
+
 
 environment:
   sdk: ^3.10.1
@@ -36,6 +45,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   hive: ^2.2.3
   hive_flutter: ^1.1.0
+  flutter_launcher_icons: ^0.14.4
 
 
 dev_dependencies:
@@ -60,6 +70,8 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+  assets:
+    - assets/to-do-list.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:
