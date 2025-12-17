@@ -312,7 +312,7 @@ class _EventsScreenState extends State<EventsScreen> {
         ),
         body: ValueListenableBuilder(
           valueListenable: box.listenable(),
-          builder: (_, Box<Event> b, __) {
+          builder: (_, Box<Event> b, _) {
             final events = b.values.toList();
             return TabBarView(
               children: [
