@@ -12,17 +12,14 @@ class TasksScreen extends StatefulWidget {
 class _TasksScreenState extends State<TasksScreen> {
   late final Box<Task> taskBox;
 
-  static const primary = Color(0xFF6D4C41);   // Brown 700
-  static const surface = Color(0xFFD7CCC8);   // Brown 100
+  static const primary = Color(0xFF6D4C41); // Brown 700
+  static const surface = Color(0xFFD7CCC8); // Brown 100
 
   @override
   void initState() {
     super.initState();
     taskBox = Hive.box<Task>('tasks');
   }
-
-
-
 
   void _showAddEditSheet({Task? task}) {
     final titleCtl = TextEditingController(text: task?.title ?? "");
@@ -101,13 +98,13 @@ class _TasksScreenState extends State<TasksScreen> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                backgroundColor: primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primary,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                       onPressed: () => Navigator.pop(ctx),
                       child: const Text("Cancel"),
                     ),
@@ -123,9 +120,7 @@ class _TasksScreenState extends State<TasksScreen> {
                       onPressed: () async {
                         if (titleCtl.text.trim().isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Task name required"),
-                            ),
+                            const SnackBar(content: Text("Task name required")),
                           );
                           return;
                         }
@@ -157,9 +152,6 @@ class _TasksScreenState extends State<TasksScreen> {
     );
   }
 
-
-
-
   Future<void> _toggle(Task t) async {
     t.isCompleted = !t.isCompleted;
     await t.save();
@@ -182,9 +174,7 @@ class _TasksScreenState extends State<TasksScreen> {
       onDismissed: (_) => t.delete(),
       child: Card(
         margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: ListTile(
           onTap: t.isCompleted
               ? null
@@ -198,8 +188,7 @@ class _TasksScreenState extends State<TasksScreen> {
             t.title,
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              decoration:
-              t.isCompleted ? TextDecoration.lineThrough : null,
+              decoration: t.isCompleted ? TextDecoration.lineThrough : null,
             ),
           ),
           subtitle: t.note.isNotEmpty ? Text(t.note) : null,
@@ -211,9 +200,6 @@ class _TasksScreenState extends State<TasksScreen> {
     );
   }
 
-
-
-
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
@@ -221,6 +207,19 @@ class _TasksScreenState extends State<TasksScreen> {
       child: Scaffold(
         backgroundColor: surface,
         appBar: AppBar(
+            actions:<Widget>[ IconButton(
+              icon: const Icon(
+                  Icons.home,
+                  color: Colors.white
+              ),
+              onPressed: () => Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/',
+                    (_) => false,
+              ),
+            ),
+],
+
           backgroundColor: primary,
           iconTheme: const IconThemeData(color: Colors.white),
           title: const Text("Tasks", style: TextStyle(color: Colors.white)),

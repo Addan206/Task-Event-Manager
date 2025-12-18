@@ -304,7 +304,18 @@ class _EventsScreenState extends State<EventsScreen> {
     return DefaultTabController(
       length: 2,
       child: Scaffold( backgroundColor: surface,
-        appBar: AppBar(
+        appBar: AppBar(actions:<Widget>[ IconButton(
+          icon: const Icon(
+              Icons.home,
+              color: Colors.white
+          ),
+          onPressed: () => Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/',
+                (_) => false,
+          ),
+        ),
+        ],
           backgroundColor: primary,
           iconTheme: const IconThemeData(color: Colors.white),
           title: const Text("Events", style: TextStyle(color: Colors.white)),
