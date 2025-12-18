@@ -8,12 +8,11 @@ class TasksScreen extends StatefulWidget {
   @override
   State<TasksScreen> createState() => _TasksScreenState();
 }
-// color pallet and shade
+
 class _TasksScreenState extends State<TasksScreen> {
   late final Box<Task> taskBox;
 
   static const primary = Color(0xFF6D4C41);   // Brown 700
-  static const secondary = Color(0xFF8D6E63); // Brown 400
   static const surface = Color(0xFFD7CCC8);   // Brown 100
 
   @override
@@ -23,7 +22,7 @@ class _TasksScreenState extends State<TasksScreen> {
   }
 
 
-// ADD / EDIT TASK
+
 
   void _showAddEditSheet({Task? task}) {
     final titleCtl = TextEditingController(text: task?.title ?? "");
@@ -61,7 +60,7 @@ class _TasksScreenState extends State<TasksScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-          
+
                 Text(
                   task == null ? "Add Task" : "Edit Task",
                   style: const TextStyle(
@@ -71,7 +70,7 @@ class _TasksScreenState extends State<TasksScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-          
+
                 TextField(
                   controller: titleCtl,
                   decoration: InputDecoration(
@@ -83,7 +82,7 @@ class _TasksScreenState extends State<TasksScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-          
+
                 TextField(
                   controller: noteCtl,
                   maxLines: 3,
@@ -95,13 +94,20 @@ class _TasksScreenState extends State<TasksScreen> {
                     ),
                   ),
                 ),
-          
+
                 const SizedBox(height: 24),
-          
+
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    TextButton(
+                    ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                backgroundColor: primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
                       onPressed: () => Navigator.pop(ctx),
                       child: const Text("Cancel"),
                     ),
@@ -123,7 +129,7 @@ class _TasksScreenState extends State<TasksScreen> {
                           );
                           return;
                         }
-          
+
                         if (task == null) {
                           taskBox.add(
                             Task(
@@ -136,7 +142,7 @@ class _TasksScreenState extends State<TasksScreen> {
                           task.note = noteCtl.text.trim();
                           await task.save();
                         }
-          
+
                         Navigator.pop(ctx);
                       },
                       child: Text(task == null ? "Add Task" : "Save"),
@@ -152,14 +158,13 @@ class _TasksScreenState extends State<TasksScreen> {
   }
 
 
-  // TOGGLE COMPLETE
+
 
   Future<void> _toggle(Task t) async {
     t.isCompleted = !t.isCompleted;
     await t.save();
   }
 
-  // delete
   Widget _taskTile(Task t) {
     return Dismissible(
       key: ValueKey(t.key),
@@ -208,7 +213,6 @@ class _TasksScreenState extends State<TasksScreen> {
 
 
 
-  // UI screen
 
   @override
   Widget build(BuildContext context) {
@@ -231,7 +235,7 @@ class _TasksScreenState extends State<TasksScreen> {
         ),
         body: ValueListenableBuilder(
           valueListenable: taskBox.listenable(),
-          builder: (_, Box<Task> box, __) {
+          builder: (_, Box<Task> box, _) {
             final all = box.values.toList();
             final pending = all.where((t) => !t.isCompleted).toList();
             final completed = all.where((t) => t.isCompleted).toList();

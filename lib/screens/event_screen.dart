@@ -15,7 +15,7 @@ class _EventsScreenState extends State<EventsScreen> {
   Timer? _timer;
 
   static const primary = Color(0xFF6D4C41);   // Brown 700
-  static const secondary = Color(0xFF8D6E63); // Brown 400
+  static const surface = Color(0xFFD7CCC8);   // Brown 100
 
   @override
   void initState() {
@@ -39,7 +39,7 @@ class _EventsScreenState extends State<EventsScreen> {
       list.where((e) => e.dateTime.isBefore(DateTime.now())).toList();
 
 
-  // Add / Edit Bottom Sheet
+  // Add
 
   void _showAddEdit([Event? e]) {
     final formKey = GlobalKey<FormState>();
@@ -129,7 +129,7 @@ class _EventsScreenState extends State<EventsScreen> {
                       children: [
                         Expanded(
                           child: Text(
-                            "📅 ${selectedDate.toString().substring(0, 16)}",
+                            " ${selectedDate.toString().substring(0, 16)}",
                             style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
                         ),
@@ -206,7 +206,14 @@ class _EventsScreenState extends State<EventsScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        TextButton(
+                        ElevatedButton(
+                          style:ElevatedButton.styleFrom(
+                    backgroundColor: primary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
                           onPressed: () => Navigator.pop(ctx),
                           child: const Text("Cancel"),
                         ),
@@ -250,7 +257,7 @@ class _EventsScreenState extends State<EventsScreen> {
     );
   }
 
-  // Swipe to Delete Card
+  // Swipe to Delete
   Widget eventTile(Event e) {
     return Dismissible(
       key: ValueKey(e.key),
@@ -296,7 +303,7 @@ class _EventsScreenState extends State<EventsScreen> {
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: 2,
-      child: Scaffold(
+      child: Scaffold( backgroundColor: surface,
         appBar: AppBar(
           backgroundColor: primary,
           iconTheme: const IconThemeData(color: Colors.white),
@@ -315,11 +322,21 @@ class _EventsScreenState extends State<EventsScreen> {
           builder: (_, Box<Event> b, _) {
             final events = b.values.toList();
             return TabBarView(
-              children: [
-                ListView(children: coming(events).map(eventTile).toList()),
-                ListView(children: past(events).map(eventTile).toList()),
-              ],
+                children: [
+                  events.isEmpty
+                      ? const Center(child: Text("No upcoming event"))
+                      :ListView(children: coming(events).map(eventTile).toList()),
+                  events.isEmpty
+                      ? const Center(child: Text("No past event"))
+                      : ListView(children: past(events).map(eventTile).toList()),
+                ],
             );
+            // return TabBarView(
+            //   children: [
+            //     ListView(children: coming(events).map(eventTile).toList()),
+            //     ListView(children: past(events).map(eventTile).toList()),
+            //   ],
+            // );
           },
         ),
         floatingActionButton: FloatingActionButton(

@@ -6,7 +6,7 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 221, 217, 217),
+      backgroundColor: const Color(0xFFD7CCC8),
       body: SafeArea(
         child: Center(
           child: Column(
@@ -21,12 +21,12 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 40),
-              // Buttons row
+              // Button
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   LargeButton(
-                    color: const  Color(0xFF3A0D9A),
+                    color: const  Color(0xFF8D6E63),
                     icon: Icons.list,
                     label: "Tasks",
                     onTap: () => Navigator.pushNamed(context, "/tasks"),
@@ -34,7 +34,7 @@ class HomeScreen extends StatelessWidget {
                   ),
                   const SizedBox(width: 20),
                   LargeButton(
-                    color: const Color(0xFF871515),
+                    color: const Color(0xFF6D4C41),
                     icon: Icons.event,
                     label: "Events",
                     onTap: () => Navigator.pushNamed(context, "/events"),

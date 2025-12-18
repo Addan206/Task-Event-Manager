@@ -11,7 +11,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
 
-  // register adapters (do it once)
+
   if (!Hive.isAdapterRegistered(TaskAdapter().typeId)) {
     Hive.registerAdapter(TaskAdapter());
   }
@@ -19,7 +19,7 @@ Future<void> main() async {
     Hive.registerAdapter(EventAdapter());
   }
 
-  // open boxes
+
   await Hive.openBox<Task>('tasks');
   await Hive.openBox<Event>('events');
 
