@@ -12,8 +12,11 @@ class TasksScreen extends StatefulWidget {
 class _TasksScreenState extends State<TasksScreen> {
   late final Box<Task> taskBox;
 
-  static const primary = Color(0xFF6D4C41); // Brown 700
-  static const surface = Color(0xFFD7CCC8); // Brown 100
+  static const primary = Color(0xFF6D4C41);
+  static const surface = Color(0xFFD7CCC8);
+
+  final Set<int> _selectedTasks = {};
+  final _formKey = GlobalKey<FormState>();
 
   @override
   void initState() {
@@ -30,7 +33,8 @@ class _TasksScreenState extends State<TasksScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
-        return Center(
+        return Form(
+          key: _formKey,
           child: Container(
             padding: EdgeInsets.only(
               left: 20,
@@ -57,7 +61,6 @@ class _TasksScreenState extends State<TasksScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-
                 Text(
                   task == null ? "Add Task" : "Edit Task",
                   style: const TextStyle(
@@ -68,7 +71,8 @@ class _TasksScreenState extends State<TasksScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                TextField(
+                /// TASK TITLE (REQUIRED)
+                TextFormField(
                   controller: titleCtl,
                   decoration: InputDecoration(
                     labelText: "Task Name",
@@ -77,10 +81,18 @@ class _TasksScreenState extends State<TasksScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return "Task name is required";
+                    }
+                    return null;
+                  },
                 ),
+
                 const SizedBox(height: 12),
 
-                TextField(
+                /// DESCRIPTION (OPTIONAL)
+                TextFormField(
                   controller: noteCtl,
                   maxLines: 3,
                   decoration: InputDecoration(
@@ -108,7 +120,7 @@ class _TasksScreenState extends State<TasksScreen> {
                       onPressed: () => Navigator.pop(ctx),
                       child: const Text("Cancel"),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 10),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: primary,
@@ -118,29 +130,21 @@ class _TasksScreenState extends State<TasksScreen> {
                         ),
                       ),
                       onPressed: () async {
-                        if (titleCtl.text.trim().isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Task name required")),
-                          );
-                          return;
-                        }
+                        if (!_formKey.currentState!.validate()) return;
 
                         if (task == null) {
-                          taskBox.add(
-                            Task(
-                              title: titleCtl.text.trim(),
-                              note: noteCtl.text.trim(),
-                            ),
-                          );
+                          taskBox.add(Task(
+                            title: titleCtl.text.trim(),
+                            note: noteCtl.text.trim(),
+                          ));
                         } else {
                           task.title = titleCtl.text.trim();
                           task.note = noteCtl.text.trim();
                           await task.save();
                         }
-
                         Navigator.pop(ctx);
                       },
-                      child: Text(task == null ? "Add Task" : "Save"),
+                      child: const Text("Save"),
                     ),
                   ],
                 ),
@@ -152,49 +156,77 @@ class _TasksScreenState extends State<TasksScreen> {
     );
   }
 
-  Future<void> _toggle(Task t) async {
+  Future<void> _toggleStatus(Task t) async {
     t.isCompleted = !t.isCompleted;
     await t.save();
   }
 
   Widget _taskTile(Task t) {
+    final isSelected = _selectedTasks.contains(t.key);
+
     return Dismissible(
       key: ValueKey(t.key),
       direction: DismissDirection.endToStart,
       background: Container(
         margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
+        alignment: Alignment.centerRight,
         decoration: BoxDecoration(
           color: Colors.brown.shade700,
           borderRadius: BorderRadius.circular(12),
         ),
         child: const Icon(Icons.delete, color: Colors.white),
       ),
-      onDismissed: (_) => t.delete(),
+      onDismissed: (_) async {
+        _selectedTasks.remove(t.key);
+        await t.delete();
+      },
       child: Card(
         margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        color: isSelected ? surface.withOpacity(0.5) : null,
         child: ListTile(
-          onTap: t.isCompleted
+          onTap: t.isCompleted || isSelected
               ? null
-              : () => _showAddEditSheet(task: t), //  EDIT HERE
+              : () => _showAddEditSheet(task: t),
           leading: Checkbox(
-            value: t.isCompleted,
+            value: isSelected,
             activeColor: primary,
-            onChanged: (_) => _toggle(t),
+            onChanged: (val) {
+              setState(() {
+                val == true
+                    ? _selectedTasks.add(t.key as int)
+                    : _selectedTasks.remove(t.key);
+              });
+            },
           ),
           title: Text(
             t.title,
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              decoration: t.isCompleted ? TextDecoration.lineThrough : null,
+              decoration:
+              t.isCompleted ? TextDecoration.lineThrough : null,
             ),
           ),
           subtitle: t.note.isNotEmpty ? Text(t.note) : null,
-          trailing: t.isCompleted
-              ? const Icon(Icons.lock, size: 18, color: Colors.grey)
-              : const Icon(Icons.edit, size: 18, color: primary),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: Icon(
+                  t.isCompleted ? Icons.undo : Icons.check_circle,
+                  color: primary,
+                  size: 20,
+                ),
+                onPressed: () => _toggleStatus(t),
+              ),
+              Icon(
+                t.isCompleted ? Icons.lock : Icons.edit,
+                size: 18,
+                color: t.isCompleted ? Colors.grey : primary,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -207,37 +239,51 @@ class _TasksScreenState extends State<TasksScreen> {
       child: Scaffold(
         backgroundColor: surface,
         appBar: AppBar(
-            actions:<Widget>[ IconButton(
-              icon: const Icon(
-                  Icons.home,
-                  color: Colors.white
-              ),
+          backgroundColor: primary,
+          iconTheme: const IconThemeData(color: Colors.white),
+          title: const Text("Tasks", style: TextStyle(color: Colors.white)),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.home, color: Colors.white),
               onPressed: () => Navigator.pushNamedAndRemoveUntil(
                 context,
                 '/',
                     (_) => false,
               ),
             ),
-],
-
-          backgroundColor: primary,
-          iconTheme: const IconThemeData(color: Colors.white),
-          title: const Text("Tasks", style: TextStyle(color: Colors.white)),
+            if (_selectedTasks.isNotEmpty)
+              IconButton(
+                icon: const Icon(Icons.delete, color: Colors.white),
+                onPressed: () async {
+                  for (final key in _selectedTasks) {
+                    await taskBox.delete(key);
+                  }
+                  setState(() => _selectedTasks.clear());
+                },
+              ),
+          ],
           bottom: const TabBar(
             labelColor: Colors.white,
-            unselectedLabelColor: Colors.white70,
+            unselectedLabelColor: Colors.white,
+            indicatorColor: Colors.white,
             tabs: [
-              Tab(icon: Icon(Icons.more_horiz), text: "Pending"),
-              Tab(icon: Icon(Icons.check_circle_outline), text: "Completed"),
+              Tab(
+                icon: Icon(Icons.more_horiz, color: Colors.white),
+                text: "Pending",
+              ),
+              Tab(
+                icon: Icon(Icons.check_circle_outline, color: Colors.white),
+                text: "Completed",
+              ),
             ],
           ),
         ),
         body: ValueListenableBuilder(
           valueListenable: taskBox.listenable(),
-          builder: (_, Box<Task> box, _) {
-            final all = box.values.toList();
-            final pending = all.where((t) => !t.isCompleted).toList();
-            final completed = all.where((t) => t.isCompleted).toList();
+          builder: (_, Box<Task> box, __) {
+            final tasks = box.values.toList();
+            final pending = tasks.where((t) => !t.isCompleted).toList();
+            final completed = tasks.where((t) => t.isCompleted).toList();
 
             return TabBarView(
               children: [
