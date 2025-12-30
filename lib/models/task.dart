@@ -1,42 +1,25 @@
-import 'package:hive/hive.dart';
-
-class Task extends HiveObject {
+class Task {
+  final int id;
   String title;
-  String note;
-  final DateTime createdAt;
+  String description;
+  String location;
   bool isCompleted;
 
   Task({
+    required this.id,
     required this.title,
-    this.note = '',
-    DateTime? createdAt,
-    this.isCompleted = false,
-  }) : createdAt = createdAt ?? DateTime.now();
-}
+    required this.description,
+    required this.location,
+    required this.isCompleted,
+  });
 
-class TaskAdapter extends TypeAdapter<Task> {
-  @override
-  final int typeId = 0;
-
-  @override
-  Task read(BinaryReader r) {
-    final title = r.readString();
-    final note = r.readString();
-    final created = r.readInt();
-    final completed = r.readBool();
+  factory Task.fromJson(Map<String, dynamic> json) {
     return Task(
-      title: title,
-      note: note,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(created),
-      isCompleted: completed,
+      id: json['id'] as int,
+      title: json['title'] as String,
+      description: json['description'] as String,
+      location: json['location'] as String,
+      isCompleted: json['completed'] as bool,
     );
-  }
-
-  @override
-  void write(BinaryWriter w, Task t) {
-    w.writeString(t.title);
-    w.writeString(t.note);
-    w.writeInt(t.createdAt.millisecondsSinceEpoch);
-    w.writeBool(t.isCompleted);
   }
 }

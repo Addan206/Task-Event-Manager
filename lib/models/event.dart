@@ -1,48 +1,50 @@
-import 'package:hive/hive.dart';
-
-class Event extends HiveObject {
-  String name;
+class Event {
+  final int? id;
+  String eventName;
   String location;
   DateTime dateTime;
-  final DateTime createdAt;
-  String note;
 
   Event({
-    required this.name,
-    this.location = '',
+    this.id,
+    required this.eventName,
+    required this.location,
     required this.dateTime,
-    this.note = '',
-    DateTime? createdAt,
-  }) : createdAt = createdAt ?? DateTime.now();
-}
+  });
 
-/// Manual Hive adapter for Event (typeId = 1)
-class EventAdapter extends TypeAdapter<Event> {
-  @override
-  final int typeId = 1;
-
-  @override
-  Event read(BinaryReader r) {
-    final name = r.readString();
-    final location = r.readString();
-    final dateMs = r.readInt();
-    final note = r.readString();
-    final createdMs = r.readInt();
+  factory Event.fromJson(Map<String, dynamic> json) {
     return Event(
-      name: name,
-      location: location,
-      dateTime: DateTime.fromMillisecondsSinceEpoch(dateMs),
-      note: note,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(createdMs),
+      id: json['id'],
+      eventName: json['event_name'] as String,
+      location: json['location'] as String,
+      dateTime: DateTime.parse(
+        '${json['event_date']} ${json['event_time']}',
+      ),
     );
   }
 
-  @override
-  void write(BinaryWriter w, Event obj) {
-    w.writeString(obj.name);
-    w.writeString(obj.location);
-    w.writeInt(obj.dateTime.millisecondsSinceEpoch);
-    w.writeString(obj.note);
-    w.writeInt(obj.createdAt.millisecondsSinceEpoch);
+  /// EXACT FORMAT REQUIRED BY FASTAPI
+  Map<String, String> toQuery() {
+    final d = dateTime;
+    return {
+      'event_name': eventName,
+      'location': location,
+      'event_date':
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}',
+      'event_time':
+      '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}:00',
+    };
+  }
+
+  Event copyWith({
+    String? eventName,
+    String? location,
+    DateTime? dateTime,
+  }) {
+    return Event(
+      id: id,
+      eventName: eventName ?? this.eventName,
+      location: location ?? this.location,
+      dateTime: dateTime ?? this.dateTime,
+    );
   }
 }

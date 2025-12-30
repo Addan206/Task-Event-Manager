@@ -1,7 +1,8 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:provider/provider.dart';
+
 import '../models/event.dart';
+import '../controllers/event_controller.dart';
 
 class EventsScreen extends StatefulWidget {
   const EventsScreen({super.key});
@@ -11,245 +12,169 @@ class EventsScreen extends StatefulWidget {
 }
 
 class _EventsScreenState extends State<EventsScreen> {
-  late final Box<Event> box;
-  Timer? _timer;
+  static const primary = Color(0xFF6D4C41);
+  static const surface = Color(0xFFD7CCC8);
 
-  static const primary = Color(0xFF6D4C41);   // Brown 700
-  static const surface = Color(0xFFD7CCC8);   // Brown 100
+  final _formKey = GlobalKey<FormState>();
+  final Set<int> _selectedIds = {};
 
-  @override
-  void initState() {
-    super.initState();
-    box = Hive.box<Event>('events');
-    _timer = Timer.periodic(const Duration(minutes: 1), (_) {
-      if (mounted) setState(() {});
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
-
-  List<Event> coming(Iterable<Event> list) =>
+  List<Event> coming(List<Event> list) =>
       list.where((e) => e.dateTime.isAfter(DateTime.now())).toList();
 
-  List<Event> past(Iterable<Event> list) =>
+  List<Event> past(List<Event> list) =>
       list.where((e) => e.dateTime.isBefore(DateTime.now())).toList();
 
+  // ---------------- ADD / EDIT ----------------
+  void _showAddEditSheet({Event? event}) {
+    final nameCtl = TextEditingController(text: event?.eventName ?? '');
+    final locCtl = TextEditingController(text: event?.location ?? '');
+    DateTime selectedDate = event?.dateTime ?? DateTime.now();
 
-  // Add
-
-  void _showAddEdit([Event? e]) {
-    final formKey = GlobalKey<FormState>();
-
-    final nameCtl = TextEditingController(text: e?.name ?? '');
-    final locCtl = TextEditingController(text: e?.location ?? '');
-    DateTime selectedDate = e?.dateTime ?? DateTime.now();
+    final controller = context.read<EventController>();
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
-        return Center(
-          child: Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            ),
-            padding: EdgeInsets.only(
-              left: 20,
-              right: 20,
-              top: 24,
-              bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
-            ),
-            child: StatefulBuilder(
-              builder: (ctx2, setSt) => Form(
-                key: formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: Colors.brown.shade200,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    Text(
-                      e == null ? "Add Event" : "Edit Event",
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: primary,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Event Name
-                    TextFormField(
-                      controller: nameCtl,
-                      decoration: InputDecoration(
-                        labelText: "Event Name",
-                        prefixIcon: const Icon(Icons.event),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return "Event name cannot be empty";
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 12),
-
-                    TextField(
-                      controller: locCtl,
-                      decoration: InputDecoration(
-                        labelText: "Location",
-                        prefixIcon: const Icon(Icons.location_on),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            " ${selectedDate.toString().substring(0, 16)}",
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                        ),
-                        ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: primary,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          icon: const Icon(Icons.calendar_month),
-                          label: const Text("Pick"),
-                          onPressed: () async {
-                            final now = DateTime.now();
-
-                            final pickedDate = await showDatePicker(
-                              context: context,
-                              initialDate:
-                              selectedDate.isBefore(now) ? now : selectedDate,
-                              firstDate:
-                              DateTime(now.year, now.month, now.day),
-                              lastDate: DateTime(2100),
-                              builder: (context, child) {
-                                return Theme(
-                                  data: Theme.of(context).copyWith(
-                                    colorScheme: const ColorScheme.light(
-                                      primary: primary,
-                                      onPrimary: Colors.white,
-                                      onSurface: Colors.black,
-                                    ),
-                                  ),
-                                  child: child!,
-                                );
-                              },
-                            );
-                            if (pickedDate == null) return;
-
-                            final pickedTime = await showTimePicker(
-                              context: context,
-                              initialTime: TimeOfDay.now(),
-                              builder: (context, child) {
-                                return Theme(
-                                  data: Theme.of(context).copyWith(
-                                    colorScheme: const ColorScheme.light(
-                                      primary: primary,
-                                      onPrimary: Colors.white,
-                                      onSurface: Colors.black,
-                                    ),
-                                  ),
-                                  child: child!,
-                                );
-                              },
-                            );
-                            if (pickedTime == null) return;
-
-                            final newDateTime = DateTime(
-                              pickedDate.year,
-                              pickedDate.month,
-                              pickedDate.day,
-                              pickedTime.hour,
-                              pickedTime.minute,
-                            );
-
-                            if (newDateTime.isBefore(DateTime.now())) return;
-                            setSt(() => selectedDate = newDateTime);
-                          },
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        ElevatedButton(
-                          style:ElevatedButton.styleFrom(
-                    backgroundColor: primary,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                          onPressed: () => Navigator.pop(ctx),
-                          child: const Text("Cancel"),
-                        ),
-                        const SizedBox(width: 8),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: primary,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          onPressed: () {
-                            if (!formKey.currentState!.validate()) return;
-
-                            if (e == null) {
-                              box.add(Event(
-                                name: nameCtl.text.trim(),
-                                location: locCtl.text.trim(),
-                                dateTime: selectedDate,
-                              ));
-                            } else {
-                              e.name = nameCtl.text.trim();
-                              e.location = locCtl.text.trim();
-                              e.dateTime = selectedDate;
-                              e.save();
-                            }
-                            Navigator.pop(ctx);
-                          },
-                          child: Text(e == null ? "Add Event" : "Save"),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+        return StatefulBuilder(
+          builder: (_, setSt) => Form(
+            key: _formKey,
+            child: Container(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 24,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
               ),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    event == null ? "Add Event" : "Edit Event",
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: primary,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  TextFormField(
+                    controller: nameCtl,
+                    decoration: const InputDecoration(
+                      labelText: "Event Name",
+                      prefixIcon: Icon(Icons.event),
+                    ),
+                    validator: (v) =>
+                    v == null || v.trim().isEmpty ? "Required" : null,
+                  ),
+                  const SizedBox(height: 12),
+
+                  TextFormField(
+                    controller: locCtl,
+                    decoration: const InputDecoration(
+                      labelText: "Location",
+                      prefixIcon: Icon(Icons.location_on),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          selectedDate.toString().substring(0, 16),
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primary,
+                          foregroundColor: Colors.white,
+                        ),
+                        icon: const Icon(Icons.calendar_today, color: Colors.white),
+                        label: const Text("Pick"),
+                        onPressed: () async {
+                          final date = await showDatePicker(
+                            context: context,
+                            initialDate: selectedDate,
+                            firstDate: DateTime.now(),
+                            lastDate: DateTime(2100),
+                          );
+                          if (date == null) return;
+
+                          final time = await showTimePicker(
+                            context: context,
+                            initialTime:
+                            TimeOfDay.fromDateTime(selectedDate),
+                          );
+                          if (time == null) return;
+
+                          setSt(() {
+                            selectedDate = DateTime(
+                              date.year,
+                              date.month,
+                              date.day,
+                              time.hour,
+                              time.minute,
+                            );
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text(
+                      "Cancel",
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primary,
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: () async {
+                      if (!_formKey.currentState!.validate()) return;
+
+                      if (event == null) {
+                        await controller.addEvent(
+                          Event(
+                            eventName: nameCtl.text.trim(),
+                            location: locCtl.text.trim(),
+                            dateTime: selectedDate,
+                          ),
+                        );
+                      } else {
+                        await controller.updateEvent(
+                          event.copyWith(
+                            eventName: nameCtl.text.trim(),
+                            location: locCtl.text.trim(),
+                            dateTime: selectedDate,
+                          ),
+                        );
+                      }
+
+                      Navigator.pop(ctx);
+                    },
+                    child: const Text("Save"),
+                  ),
+                ],
+              ),
+
+            ),
             ),
           ),
         );
@@ -257,105 +182,125 @@ class _EventsScreenState extends State<EventsScreen> {
     );
   }
 
-  // Swipe to Delete
-  Widget eventTile(Event e) {
-    return Dismissible(
-      key: ValueKey(e.key),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        decoration: BoxDecoration(
-          color: Colors.brown.shade700,
-          borderRadius: BorderRadius.circular(12),
+  // ---------------- TILE ----------------
+  Widget _eventTile(Event e) {
+    final selected = _selectedIds.contains(e.id);
+
+    return Card(
+      color: selected ? surface.withOpacity(0.5) : primary,
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: ListTile(
+        leading: Icon(
+          selected ? Icons.check_circle : Icons.event,
+          color: Colors.white,
         ),
-        child: const Icon(Icons.delete, color: Colors.white),
-      ),
-      onDismissed: (_) => e.delete(),
-      child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: ListTile(
-          onTap: () => _showAddEdit(e),
-          leading: const Icon(Icons.event, color: primary),
-          title: Text(
-            e.name,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          subtitle: Text(
-            "${e.location}\n${e.dateTime.toString().substring(0, 16)}",
-          ),
-          isThreeLine: true,
-          trailing: const Icon(
-            Icons.edit,
-            size: 18,
-            color: primary,
+        title: Text(
+          e.eventName,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
           ),
         ),
+        subtitle: Text(
+          "${e.location}\n${e.dateTime.toString().substring(0, 16)}",
+          style: const TextStyle(color: Colors.white70),
+        ),
+        isThreeLine: true,
+        onTap: _selectedIds.isNotEmpty
+            ? () {
+          setState(() {
+            selected
+                ? _selectedIds.remove(e.id)
+                : _selectedIds.add(e.id!);
+          });
+        }
+            : () => _showAddEditSheet(event: e),
+        onLongPress: () {
+          setState(() {
+            selected
+                ? _selectedIds.remove(e.id)
+                : _selectedIds.add(e.id!);
+          });
+        },
       ),
     );
   }
 
+  // ---------------- BUILD ----------------
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold( backgroundColor: surface,
-        appBar: AppBar(actions:<Widget>[ IconButton(
-          icon: const Icon(
-              Icons.home,
-              color: Colors.white
-          ),
-          onPressed: () => Navigator.pushNamedAndRemoveUntil(
-            context,
-            '/',
-                (_) => false,
-          ),
-        ),
-        ],
-          backgroundColor: primary,
-          iconTheme: const IconThemeData(color: Colors.white),
-          title: const Text("Events", style: TextStyle(color: Colors.white)),
-          bottom: const TabBar(
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white70,
-            tabs: [
-              Tab(icon: Icon(Icons.event), text: "Coming"),
-              Tab(icon: Icon(Icons.event_available), text: "Past"),
-            ],
-          ),
-        ),
-        body: ValueListenableBuilder(
-          valueListenable: box.listenable(),
-          builder: (_, Box<Event> b, _) {
-            final events = b.values.toList();
-            return TabBarView(
-                children: [
-                  events.isEmpty
-                      ? const Center(child: Text("No upcoming event"))
-                      :ListView(children: coming(events).map(eventTile).toList()),
-                  events.isEmpty
-                      ? const Center(child: Text("No past event"))
-                      : ListView(children: past(events).map(eventTile).toList()),
+    return Consumer<EventController>(
+      builder: (context, controller, _) {
+        final upcoming = coming(controller.events);
+        final pastEvents = past(controller.events);
+
+        return DefaultTabController(
+          length: 2,
+          child: Scaffold(
+            backgroundColor: surface,
+            appBar: AppBar(
+              backgroundColor: primary,
+              iconTheme: const IconThemeData(color: Colors.white),
+              title: const Text(
+                "Events",
+                style: TextStyle(color: Colors.white),
+              ),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.home, color: Colors.white),
+                  onPressed: () => Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    '/',
+                        (_) => false,
+                  ),
+                ),
+                if (_selectedIds.isNotEmpty)
+                  IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.white),
+                    onPressed: () async {
+                      for (final id in _selectedIds) {
+                        final e = controller.events
+                            .firstWhere((x) => x.id == id);
+                        await controller.deleteEvent(e);
+                      }
+                      setState(() => _selectedIds.clear());
+                    },
+                  ),
+              ],
+              bottom: const TabBar(
+                labelColor: Colors.white,
+                unselectedLabelColor: Colors.white70,
+                tabs: [
+                  Tab(icon: Icon(Icons.event), text: "Coming"),
+                  Tab(
+                    icon: Icon(Icons.event_available),
+                    text: "Past",
+                  ),
                 ],
-            );
-            // return TabBarView(
-            //   children: [
-            //     ListView(children: coming(events).map(eventTile).toList()),
-            //     ListView(children: past(events).map(eventTile).toList()),
-            //   ],
-            // );
-          },
-        ),
-        floatingActionButton: FloatingActionButton(
-          backgroundColor: primary,
-          onPressed: () => _showAddEdit(),
-          child: const Icon(Icons.add, color: Colors.white),
-        ),
-      ),
+              ),
+            ),
+            body: TabBarView(
+              children: [
+                upcoming.isEmpty
+                    ? const Center(child: Text("No upcoming events"))
+                    : ListView(
+                  children: upcoming.map(_eventTile).toList(),
+                ),
+                pastEvents.isEmpty
+                    ? const Center(child: Text("No past events"))
+                    : ListView(
+                  children: pastEvents.map(_eventTile).toList(),
+                ),
+              ],
+            ),
+            floatingActionButton: FloatingActionButton(
+              backgroundColor: primary,
+              onPressed: () => _showAddEditSheet(),
+              child: const Icon(Icons.add, color: Colors.white),
+            ),
+          ),
+        );
+      },
     );
   }
 }
